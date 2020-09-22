@@ -1,0 +1,43 @@
+version: '3'
+
+networks:
+  app-tier:
+    driver: bridge
+
+services:
+  app:
+    container_name: user-manager-app
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    volumes:
+      - .:/srv/app
+    networks:
+      - app-tier
+    ports:
+      - "101:80"
+    depends_on:
+      - db
+    env_file: .docker.env
+    environment:
+      - PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d-dev
+      - COMPOSER_ALLOW_SUPERUSER=1
+
+  db:
+    container_name: user-manager-db
+    build:
+      context: .
+      dockerfile: ./docker/mysql/Dockerfile
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci --init-connect='SET NAMES UTF8;' --innodb-flush-log-at-trx-commit=0 --sql_mode="NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+#    restart: always
+    volumes:
+      - ./docker/mysql/data/:/var/lib/mysql/
+    networks:
+      - app-tier
+    ports:
+      - 3314:3306
+    expose:
+      - "3314"
+    environment:
+      - MYSQL_DATABASE=main
+      - MYSQL_ROOT_PASSWORD=mysql
